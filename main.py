@@ -4,6 +4,12 @@ import whisper
 import tempfile
 import os
 import logging
+import ssl
+import certifi
+
+# Set SSL_CERT_FILE to use certifi's certificate bundle
+# This is to address SSL certificate verification errors when downloading the model.
+os.environ['SSL_CERT_FILE'] = certifi.where()
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn.error")
@@ -31,4 +37,3 @@ async def transcribe(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Transcription error: {e}")
         raise HTTPException(status_code=500, detail="Transcription failed")
-
