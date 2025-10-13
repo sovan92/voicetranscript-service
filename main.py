@@ -65,7 +65,7 @@ async def transcribe(request: Request, file: UploadFile = File(...)):
         HTTPException: If the file format is unsupported, the file size
                        exceeds the limit, or transcription fails.
     """
-    logger.info(f"Received transcription request for file: {file.filename}")
+    logger.info(f"Received transcription request for file: {file.filename} from IP: {request.client.host}")
 
     # Read file content into memory to check size
     contents = await file.read()
