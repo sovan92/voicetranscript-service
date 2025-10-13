@@ -28,27 +28,32 @@ def transcribe_audio(file_path, base_url):
         return None
 
 def main():
-    # Remote server configuration
-    REMOTE_SERVER = "http://54.245.18.107:8000"
-    
+    if len(sys.argv) < 2:
+        print("Usage: python minimal-client-remote.py <server_url> [audio_file]")
+        print("Example: python minimal-client-remote.py http://localhost:8000 harvard.wav")
+        sys.exit(1)
+
+    # Remote server configuration from command line
+    remote_server = sys.argv[1]
+
     # Default audio file (can be overridden by command line argument)
     audio_file = "harvard.wav"
     
     # Allow command line argument for different audio file
-    if len(sys.argv) > 1:
-        audio_file = sys.argv[1]
+    if len(sys.argv) > 2:
+        audio_file = sys.argv[2]
 
     # First check if the server is healthy
-    print("Checking server health...")
-    if not check_health(REMOTE_SERVER):
+    print(f"Checking server health at {remote_server}...")
+    if not check_health(remote_server):
         print("Server is not healthy. Exiting.")
         sys.exit(1)
     print("Server is healthy!")
 
     # Attempt transcription
     print(f"Transcribing {audio_file}...")
-    transcript = transcribe_audio(audio_file, REMOTE_SERVER)
-    
+    transcript = transcribe_audio(audio_file, remote_server)
+
     if transcript:
         print("\nTranscription result:")
         print(transcript)
