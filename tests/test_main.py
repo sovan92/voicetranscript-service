@@ -25,3 +25,36 @@ def test_transcribe_success(client, mock_model):
 
     # Verify that the mock transcribe method was called
     mock_model.transcribe.assert_called_once()
+
+
+def test_transcribe_file_too_large(client):
+    """
+    Test that uploading a file larger than 100KB returns a 413 error.
+    """
+    # Create a dummy file that is just over the 100KB limit
+    large_content = b"a" * (100 * 1024 + 1)
+    files = {"file": ("large_file.wav", large_content, "audio/wav")}
+
+    response = client.post("/transcribe", files=files)
+
+    assert response.status_code == 413
+    assert response.json()["detail"] == "File size exceeds the limit of 100KB."
+
+
+def test_transcribe_rate_limit(client, mock_model):
+    """
+    Test that the rate limit of 5 requests per minute is enforced.
+    """
+    # Use a small, valid file for the requests
+    dummy_audio_content = b"dummy wav content"
+    files = {"file": ("test.wav", dummy_audio_content, "audio/wav")}
+
+    # Make 5 requests, which should succeed
+    for i in range(5):
+        response = client.post("/transcribe", files=files)
+        assert response.status_code == 200, f"Request {i+1} failed unexpectedly"
+
+    # The 6th request should be rate-limited
+    response = client.post("/transcribe", files=files)
+    assert response.status_code == 429
+    assert "Rate limit exceeded" in response.json()["error"]

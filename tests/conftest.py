@@ -20,15 +20,18 @@ def mock_model():
     mock_model_instance.transcribe.return_value = ([mock_segment], "info")
     return mock_model_instance
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def client(mock_model):
     """
     This fixture sets up the test client. It patches the 'model' object
     in the 'main' module BEFORE the app is imported for testing.
     This is the key to ensuring the real model is never loaded.
     """
+    # Reset the limiter's storage before each test that uses this client
+    from main import limiter
+    limiter.reset()
+
     with patch("main.model", mock_model):
         from main import app
         with TestClient(app) as test_client:
             yield test_client
-
