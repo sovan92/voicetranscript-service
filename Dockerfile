@@ -4,8 +4,11 @@ FROM python:3.10-slim AS builder
 # Set non-interactive frontend for apt-get
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies required for building wheels and for whisper/torch
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg build-essential && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install only necessary build tools to save space, and clean up thoroughly
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg gcc g++ make && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 # Set up a virtual environment
 ENV VIRTUAL_ENV=/opt/venv

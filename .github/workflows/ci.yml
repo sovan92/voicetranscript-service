@@ -44,21 +44,20 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout code on EC2
-        uses: appleboy/ssh-action@master
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set tag in docker-compose
+        run: |
+          TAG=$(echo ${GITHUB_SHA} | cut -c1-7)
+          sed -i "s/__TAG__/$TAG/g" docker-compose.prod.yml
+      - name: Copy docker-compose.prod.yml to EC2
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
-          script: |
-            # Clone or pull the repository
-            if [ -d "voicetranscript-service" ]; then
-              cd voicetranscript-service
-              git pull
-            else
-              git clone https://github.com/${{ github.repository }}.git voicetranscript-service
-              cd voicetranscript-service
-            fi
+          source: "docker-compose.prod.yml"
+          target: "~/voicetranscript-service" # Assuming the project is in this directory
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -68,5 +67,7 @@ jobs:
           script: |
             cd voicetranscript-service
             echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Pull the specific versioned image
             sudo docker-compose -f docker-compose.prod.yml pull
-            sudo docker-compose -f docker-compose.prod.yml up -d --build
+            # Start the services, which will use the new image
+            sudo docker-compose -f docker-compose.prod.yml up -d
