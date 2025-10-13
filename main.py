@@ -19,8 +19,9 @@ app = FastAPI()
 logger.info("Loading transcription model...")
 # Load the model once when the application starts
 # This is more efficient than loading it for each request.
-model = WhisperModel("tiny", device="cpu", compute_type="int8")
-logger.info("Transcription model loaded successfully.")
+model_name = os.getenv("WHISPER_MODEL", "tiny")
+model = WhisperModel(model_name, device="cpu", compute_type="int8")
+logger.info(f"Transcription model '{model_name}' loaded successfully.")
 
 
 SUPPORTED_FORMATS = ["wav", "mp3", "m4a", "ogg", "flac"]
