@@ -21,13 +21,15 @@ jobs:
       - name: Run tests
         run: python -m pytest
 
-      - name: Log in to GitHub Container Registry
-        if: github.ref == 'refs/heads/main' # Only push on main branch
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry with retry
+        if: github.ref == 'refs/heads/main'
+        run: |
+          for i in 1 2 3; do
+            echo "Attempting to log in to ghcr.io (Attempt $i)"
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && break
+            echo "Login failed. Retrying in 15 seconds..."
+            sleep 15
+          done
       - name: Build and Push Docker Image to GHCR
         if: github.ref == 'refs/heads/main' # Only push on main branch
         run: |
