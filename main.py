@@ -69,10 +69,10 @@ async def transcribe(request: Request, file: UploadFile = File(...)):
 
     # Read file content into memory to check size
     contents = await file.read()
-    if len(contents) > 100 * 1024:  # 100 KB limit
-        logger.error(f"File size exceeds 100KB for file: {file.filename}")
+    if len(contents) > 10 * 1024 * 1024:  # 10 MB limit
+        logger.error(f"File size exceeds 10MB for file: {file.filename}")
         raise HTTPException(
-            status_code=413, detail="File size exceeds the limit of 100KB."
+            status_code=413, detail="File size exceeds the limit of 10MB."
         )
 
     ext = file.filename.split(".")[-1].lower()

@@ -29,16 +29,16 @@ def test_transcribe_success(client, mock_model):
 
 def test_transcribe_file_too_large(client):
     """
-    Test that uploading a file larger than 100KB returns a 413 error.
+    Test that uploading a file larger than 10MB returns a 413 error.
     """
-    # Create a dummy file that is just over the 100KB limit
-    large_content = b"a" * (100 * 1024 + 1)
+    # Create a dummy file that is just over the 10MB limit
+    large_content = b"a" * (10 * 1024 * 1024 + 1)
     files = {"file": ("large_file.wav", large_content, "audio/wav")}
 
     response = client.post("/transcribe", files=files)
 
     assert response.status_code == 413
-    assert response.json()["detail"] == "File size exceeds the limit of 100KB."
+    assert response.json()["detail"] == "File size exceeds the limit of 10MB."
 
 
 def test_transcribe_rate_limit(client, mock_model):
