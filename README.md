@@ -13,34 +13,35 @@ A FastAPI service exposes endpoints to transcribe audio files using open-source 
 ## How to Run Tests
 `python -m pytest`
 
-## How to Start Service Locally
-`uvicorn main:app --host 0.0.0.0 --port 8000`
+## Deployment
+Deployment is automated via a CI/CD pipeline using GitHub Actions. A push to the `main` branch will trigger the following workflow:
+1.  Tests are run.
+2.  A new Docker image is built and pushed to GitHub Container Registry (GHCR).
+3.  The new image is deployed to the configured EC2 instance, where the service is restarted using `docker-compose`.
 
-## Deployment Steps
-- Build Docker image: `docker build --no-cache -t voicetranscript-service .`
-- Run with Docker Compose: `docker-compose up`
-- For Ubuntu server: copy files, run above commands
+For this to work, the following secrets must be configured in the repository's `Settings` > `Secrets and variables` > `Actions`:
+- `EC2_HOST`: The IP address or domain of the EC2 instance.
+- `EC2_USERNAME`: The SSH username for the EC2 instance (e.g., `ubuntu`).
+- `EC2_PRIVATE_KEY`: The private SSH key for the EC2 instance.
 
 ## Example Usage
 
 ### Using Local Instance
 - Health check: `curl http://localhost:8000/health`
 - Transcription: `curl -F "file=@harvard.wav" http://localhost:8000/transcribe`
-- Minimal client: `python client.py`
+- Minimal client: `python minimal-client.py http://localhost:8000 harvard.wav`
 
 ### Using Deployed Instance
-- Health check: `curl http://52.13.49.73:8000/health`
-- Transcription: `curl -F "file=@harvard.wav" http://52.13.49.73:8000/transcribe`
-- Using Python client: `python minimal-client-remote.py` or `python minimal-client-remote.py harvard.wav`
+- Health check: `curl http://<EC2_HOST>:8000/health`
+- Transcription: `curl -F "file=@harvard.wav" http://<EC2_HOST>:8000/transcribe`
+- Using Python client: `python minimal-client.py http://<EC2_HOST>:8000 harvard.wav`
 
 ## Supported Formats
 wav, mp3, m4a, ogg, flac
 
-## Notes
-- Error handling/logging included
-- Secrets via env vars (if needed)
-- Trade-offs: Whisper is accurate but resource-intensive; for scale, consider faster-whisper or Vosk
-- Next steps: add streaming, auth, frontend client
+## Dependencies
+The service requires the following Python packages, which are listed in `requirements.txt`:
+```
 fastapi
 uvicorn
 openai-whisper
@@ -48,3 +49,10 @@ python-multipart
 pydantic
 pytest
 httpx
+```
+
+## Notes
+- Error handling/logging included
+- Secrets via env vars (if needed)
+- Trade-offs: Whisper is accurate but resource-intensive; for scale, consider faster-whisper or Vosk
+- Next steps: add streaming, auth, frontend client

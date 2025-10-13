@@ -29,8 +29,8 @@ def transcribe_audio(file_path, base_url):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python minimal-client-remote.py <server_url> [audio_file]")
-        print("Example: python minimal-client-remote.py http://localhost:8000 harvard.wav")
+        print("Usage: python minimal-client.py <server_url> [audio_file]")
+        print("Example: python minimal-client.py http://localhost:8000 harvard.wav")
         sys.exit(1)
 
     # Remote server configuration from command line
