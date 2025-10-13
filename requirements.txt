@@ -6,4 +6,4 @@ pydantic
 pytest
 httpx
 slowapi
-
+redis

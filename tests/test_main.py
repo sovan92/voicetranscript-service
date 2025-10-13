@@ -8,13 +8,12 @@ def test_transcribe_invalid_format(client):
     assert response.status_code == 400
     assert "Unsupported audio format" in response.json()["detail"]
 
-def test_transcribe_success(client, mock_model):
+def test_transcribe_success(client, mock_model, dummy_wav_bytes):
     # Reset the mock's call count to ensure a clean state for this test.
     mock_model.transcribe.reset_mock()
 
     # Create a dummy audio file in memory to send
-    dummy_audio_content = b"dummy wav content"
-    files = {"file": ("test.wav", dummy_audio_content, "audio/wav")}
+    files = {"file": ("test.wav", dummy_wav_bytes, "audio/wav")}
 
     # Call the endpoint
     response = client.post("/transcribe", files=files)
@@ -41,13 +40,12 @@ def test_transcribe_file_too_large(client):
     assert response.json()["detail"] == "File size exceeds the limit of 10MB."
 
 
-def test_transcribe_rate_limit(client, mock_model):
+def test_transcribe_rate_limit(client, mock_model, dummy_wav_bytes):
     """
     Test that the rate limit of 5 requests per minute is enforced.
     """
     # Use a small, valid file for the requests
-    dummy_audio_content = b"dummy wav content"
-    files = {"file": ("test.wav", dummy_audio_content, "audio/wav")}
+    files = {"file": ("test.wav", dummy_wav_bytes, "audio/wav")}
 
     # Make 5 requests, which should succeed
     for i in range(5):
