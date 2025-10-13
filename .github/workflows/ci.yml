@@ -44,6 +44,15 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
+      - uses: actions/checkout@v3
+      - name: Copy docker-compose.prod.yml to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~"
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
