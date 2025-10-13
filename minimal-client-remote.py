@@ -12,7 +12,7 @@ def check_health(base_url):
         return False
 
 def transcribe_audio(file_path, base_url):
-    """Transcribe an audio file using the local service"""
+    """Transcribe an audio file using the remote service"""
     if not os.path.exists(file_path):
         print(f"Error: File {file_path} not found")
         return None
@@ -28,8 +28,8 @@ def transcribe_audio(file_path, base_url):
         return None
 
 def main():
-    # Local server configuration
-    LOCAL_SERVER = "http://127.0.0.1:8000"
+    # Remote server configuration
+    REMOTE_SERVER = "http://52.13.49.73:8000"
     
     # Default audio file (can be overridden by command line argument)
     audio_file = "harvard.wav"
@@ -40,14 +40,14 @@ def main():
 
     # First check if the server is healthy
     print("Checking server health...")
-    if not check_health(LOCAL_SERVER):
+    if not check_health(REMOTE_SERVER):
         print("Server is not healthy. Exiting.")
         sys.exit(1)
     print("Server is healthy!")
 
     # Attempt transcription
     print(f"Transcribing {audio_file}...")
-    transcript = transcribe_audio(audio_file, LOCAL_SERVER)
+    transcript = transcribe_audio(audio_file, REMOTE_SERVER)
     
     if transcript:
         print("\nTranscription result:")

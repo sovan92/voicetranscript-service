@@ -20,9 +20,16 @@ A FastAPI service exposes endpoints to transcribe audio files using open-source 
 - For Ubuntu server: copy files, run above commands
 
 ## Example Usage
+
+### Using Local Instance
 - Health check: `curl http://localhost:8000/health`
-- Transcription: `curl -F "file=@sample.wav" http://localhost:8000/transcribe`
+- Transcription: `curl -F "file=@harvard.wav" http://localhost:8000/transcribe`
 - Minimal client: `python client.py`
+
+### Using Deployed Instance
+- Health check: `curl http://52.13.49.73:8000/health`
+- Transcription: `curl -F "file=@harvard.wav" http://52.13.49.73:8000/transcribe`
+- Using Python client: `python minimal-client-remote.py` or `python minimal-client-remote.py harvard.wav`
 
 ## Supported Formats
 wav, mp3, m4a, ogg, flac

@@ -1,6 +1,12 @@
 import pytest
+import sys
+import os
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
+
+# Add the project root directory to the Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 @pytest.fixture(scope="module")
 def mock_model():
