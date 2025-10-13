@@ -20,8 +20,6 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run tests
         run: python -m pytest
-      - name: Build Docker image
-        run: docker build -t voicetranscript-service .
 
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' # Only push on main branch
@@ -39,3 +37,23 @@ jobs:
           IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
           docker build . --tag $IMAGE_ID:$VERSION --tag $IMAGE_ID:latest
           docker push $IMAGE_ID --all-tags
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            # Login to GitHub Container Registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Pull latest image
+            docker pull ghcr.io/${{ github.repository_owner }}/voicetranscript-service:latest
+            # Stop and remove existing container
+            docker-compose -f docker-compose.prod.yml down
+            # Start new container
+            docker-compose -f docker-compose.prod.yml up -d
