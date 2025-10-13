@@ -19,7 +19,7 @@ app = FastAPI()
 logger.info("Loading transcription model...")
 # Load the model once when the application starts
 # This is more efficient than loading it for each request.
-model = WhisperModel("base", device="cpu", compute_type="int8")
+model = WhisperModel("tiny", device="cpu", compute_type="int8")
 logger.info("Transcription model loaded successfully.")
 
 
