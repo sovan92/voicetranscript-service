@@ -29,7 +29,7 @@ def transcribe_audio(file_path, base_url):
 
 def main():
     # Remote server configuration
-    REMOTE_SERVER = "http://52.13.49.73:8000"
+    REMOTE_SERVER = "http://54.245.18.107:8000"
     
     # Default audio file (can be overridden by command line argument)
     audio_file = "harvard.wav"
