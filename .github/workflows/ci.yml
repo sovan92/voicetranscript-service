@@ -49,11 +49,33 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
+            # Install Docker if it's not already installed
+            if ! command -v docker &> /dev/null
+            then
+                echo "Docker not found, installing..."
+                curl -fsSL https://get.docker.com -o get-docker.sh
+                sudo sh get-docker.sh
+            fi
+            
+            # Install Docker Compose if it's not already installed
+            if ! command -v docker-compose &> /dev/null
+            then
+                echo "Docker Compose not found, installing..."
+                sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Ensure the docker-compose.prod.yml file exists
+            if [ ! -f docker-compose.prod.yml ]; then
+              echo "docker-compose.prod.yml not found on server. Please ensure it is present."
+              exit 1
+            fi
+
             # Login to GitHub Container Registry
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             # Pull latest image
-            docker pull ghcr.io/${{ github.repository_owner }}/voicetranscript-service:latest
+            sudo docker pull ghcr.io/${{ github.repository_owner }}/voicetranscript-service:latest
             # Stop and remove existing container
-            docker-compose -f docker-compose.prod.yml down
+            sudo docker-compose -f docker-compose.prod.yml down
             # Start new container
-            docker-compose -f docker-compose.prod.yml up -d
+            sudo docker-compose -f docker-compose.prod.yml up -d
