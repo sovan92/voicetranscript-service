@@ -5,8 +5,10 @@ A FastAPI service exposes endpoints to transcribe audio files using open-source 
 
 ## Local Development
 1. Clone repo
-2. Install dependencies: `pip install -r requirements.txt`
-3. Start service: `uvicorn main:app --reload`
+2. Create virtual environment: `python3 -m venv venv`
+3. Activate virtual environment: `source venv/bin/activate`
+4. Install dependencies: `pip install -r requirements.txt`
+5. Start service: `uvicorn main:app --host 0.0.0.0 --port 8000`
 
 ## How to Run Tests
 `python -m pytest`
@@ -46,4 +48,3 @@ python-multipart
 pydantic
 pytest
 httpx
-
