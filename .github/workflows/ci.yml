@@ -57,4 +57,3 @@ jobs:
             docker-compose -f docker-compose.prod.yml down
             # Start new container
             docker-compose -f docker-compose.prod.yml up -d
-
