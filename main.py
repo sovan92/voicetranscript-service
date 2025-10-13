@@ -18,17 +18,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Custom key function to get the client's real IP address, ignoring the port
-def get_client_ip(request: Request) -> str:
-    # In a production environment with a reverse proxy, the true IP is in the headers
-    if "x-forwarded-for" in request.headers:
-        return request.headers["x-forwarded-for"].split(",")[0]
-    return request.client.host
-
-
 # Connect to Redis for centralized rate limit storage
 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-limiter = Limiter(key_func=get_client_ip, storage_uri=redis_url)
+limiter = Limiter(key_func=get_remote_address, storage_uri=redis_url)
 app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -75,7 +67,8 @@ async def transcribe(request: Request, file: UploadFile = File(...)):
         HTTPException: If the file format is unsupported, the file size
                        exceeds the limit, or transcription fails.
     """
-    logger.info(f"Received transcription request for file: {file.filename} from IP: {get_client_ip(request)}")
+    client_ip = get_remote_address(request)
+    logger.info(f"Received transcription request for file: {file.filename} from IP: {client_ip}")
 
     # Read file content into memory to check size
     contents = await file.read()
