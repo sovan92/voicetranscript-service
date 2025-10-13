@@ -5,7 +5,7 @@ import os
 def check_health(base_url):
     """Check if the server is healthy"""
     try:
-        response = requests.get(f"{base_url}/health")
+        response = requests.get(f"{base_url}/health", timeout=10)
         return response.json().get("status") == "ok"
     except requests.RequestException as e:
         print(f"Error checking server health: {e}")
@@ -20,7 +20,7 @@ def transcribe_audio(file_path, base_url):
     try:
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f, "audio/wav")}
-            response = requests.post(f"{base_url}/transcribe", files=files)
+            response = requests.post(f"{base_url}/transcribe", files=files, timeout=30)
             response.raise_for_status()  # Raise an exception for bad status codes
             return response.json().get("transcript")
     except requests.RequestException as e:
