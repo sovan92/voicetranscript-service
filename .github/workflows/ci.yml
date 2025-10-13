@@ -46,9 +46,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Set tag in docker-compose
+      - name: Set image and tag in docker-compose
         run: |
           TAG=$(echo ${GITHUB_SHA} | cut -c1-7)
+          OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+          sed -i "s|ghcr.io/srath5/|ghcr.io/$OWNER/|g" docker-compose.prod.yml
           sed -i "s/__TAG__/$TAG/g" docker-compose.prod.yml
       - name: Copy docker-compose.prod.yml to EC2
         uses: appleboy/scp-action@master
