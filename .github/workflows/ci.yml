@@ -7,6 +7,9 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python
@@ -27,7 +30,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and Push Docker Image to GHCR
         if: github.ref == 'refs/heads/main' # Only push on main branch
         run: |
@@ -37,4 +39,3 @@ jobs:
           IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
           docker build . --tag $IMAGE_ID:$VERSION --tag $IMAGE_ID:latest
           docker push $IMAGE_ID --all-tags
-
