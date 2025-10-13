@@ -9,13 +9,13 @@ A FastAPI service exposes endpoints to transcribe audio files using open-source 
 3. Start service: `uvicorn main:app --reload`
 
 ## How to Run Tests
-`pytest`
+`python -m pytest`
 
 ## How to Start Service Locally
 `uvicorn main:app --host 0.0.0.0 --port 8000`
 
 ## Deployment Steps
-- Build Docker image: `docker build -t voicetranscript-service .`
+- Build Docker image: `docker build --no-cache -t voicetranscript-service .`
 - Run with Docker Compose: `docker-compose up`
 - For Ubuntu server: copy files, run above commands
 
