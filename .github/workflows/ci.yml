@@ -44,15 +44,21 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
-      - name: Copy docker-compose.prod.yml to EC2
-        uses: appleboy/scp-action@master
+      - name: Checkout code on EC2
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "~"
+          script: |
+            # Clone or pull the repository
+            if [ -d "voicetranscript-service" ]; then
+              cd voicetranscript-service
+              git pull
+            else
+              git clone https://github.com/${{ github.repository }}.git voicetranscript-service
+              cd voicetranscript-service
+            fi
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -60,33 +66,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            # Install Docker if it's not already installed
-            if ! command -v docker &> /dev/null
-            then
-                echo "Docker not found, installing..."
-                curl -fsSL https://get.docker.com -o get-docker.sh
-                sudo sh get-docker.sh
-            fi
-            
-            # Install Docker Compose if it's not already installed
-            if ! command -v docker-compose &> /dev/null
-            then
-                echo "Docker Compose not found, installing..."
-                sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-                sudo chmod +x /usr/local/bin/docker-compose
-            fi
-
-            # Ensure the docker-compose.prod.yml file exists
-            if [ ! -f docker-compose.prod.yml ]; then
-              echo "docker-compose.prod.yml not found on server. Please ensure it is present."
-              exit 1
-            fi
-
-            # Login to GitHub Container Registry
+            cd voicetranscript-service
             echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            # Pull latest image
-            sudo docker pull ghcr.io/${{ github.repository_owner }}/voicetranscript-service:latest
-            # Stop and remove existing container
-            sudo docker-compose -f docker-compose.prod.yml down
-            # Start new container
-            sudo docker-compose -f docker-compose.prod.yml up -d
+            sudo docker-compose -f docker-compose.prod.yml pull
+            sudo docker-compose -f docker-compose.prod.yml up -d --build
