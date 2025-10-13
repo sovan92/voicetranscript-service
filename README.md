@@ -3,6 +3,10 @@
 ## Architecture Overview
 A FastAPI service exposes endpoints to transcribe audio files using open-source Whisper. It provides health and transcription endpoints, error handling, logging, and can be containerized/deployed via Docker. CI/CD is set up with GitHub Actions.
 
+## Features
+- **Rate Limiting**: To prevent abuse, the `/transcribe` endpoint is rate-limited to 5 requests per minute per IP address.
+- **File Size Limit**: The maximum allowed file size for transcription is 10MB. Requests with larger files will be rejected.
+
 ## Local Development
 1. Clone repo
 2. Create virtual environment: `python3 -m venv venv`
