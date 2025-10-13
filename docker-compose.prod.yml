@@ -1,0 +1,11 @@
+services:
+  app:
+    # Reference the image that was built and pushed to the GitHub Container Registry
+    image: ghcr.io/sovan92/voicetranscript-service:latest
+    ports:
+      - "8000:8000"
+    # The command to run the application
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    # Always restart the container if it stops
+    restart: always
+
