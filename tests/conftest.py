@@ -39,27 +39,11 @@ def mock_model():
 @pytest.fixture(scope="function")
 def client(mock_model):
     """
-    This fixture sets up the test client. It patches the 'model' object
-    and the REDIS_URL environment variable in the 'main' module BEFORE
-    the app is imported for testing. This is the key to ensuring the real
-    model is never loaded and that tests use in-memory rate limiting.
+    This fixture sets up the test client. It patches the WhisperModel
+    to prevent the real model from being loaded during testing.
     """
-    # Store the original os.getenv
-    original_getenv = os.getenv
-
-    # A side effect function for the patch to selectively mock os.getenv
-    def mock_getenv(key, default=None):
-        if key == "REDIS_URL":
-            return "memory://"
-        # For any other key, use the real os.getenv
-        return original_getenv(key, default)
-
-    # Patch os.getenv with the side effect function
-    with patch("os.getenv", side_effect=mock_getenv):
-        # Patch the model before importing the app to prevent it from loading
-        with patch("faster_whisper.WhisperModel", return_value=mock_model):
-            from main import limiter, app
-            # Reset the in-memory storage before each test
-            limiter.reset()
-            with TestClient(app) as test_client:
-                yield test_client
+    # Patch the model before importing the app to prevent it from loading
+    with patch("faster_whisper.WhisperModel", return_value=mock_model):
+        from main import app
+        with TestClient(app) as test_client:
+            yield test_client

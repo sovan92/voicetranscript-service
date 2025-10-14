@@ -5,5 +5,3 @@ python-multipart
 pydantic
 pytest
 httpx
-slowapi
-redis

@@ -5,11 +5,3 @@ services:
       - "8000:8000"
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers
     restart: always
-    depends_on:
-      - redis
-    environment:
-      - REDIS_URL=redis://redis:6379
-
-  redis:
-    image: redis:7-alpine
-    restart: always

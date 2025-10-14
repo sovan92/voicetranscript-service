@@ -40,19 +40,14 @@ def test_transcribe_file_too_large(client):
     assert response.json()["detail"] == "File size exceeds the limit of 10MB."
 
 
-def test_transcribe_rate_limit(client, mock_model, dummy_wav_bytes):
+def test_debug_client_info(client):
     """
-    Test that the rate limit of 5 requests per minute is enforced.
+    Test the debug endpoint that shows client information.
     """
-    # Use a small, valid file for the requests
-    files = {"file": ("test.wav", dummy_wav_bytes, "audio/wav")}
+    response = client.get("/debug/client-info")
+    assert response.status_code == 200
 
-    # Make 5 requests, which should succeed
-    for i in range(5):
-        response = client.post("/transcribe", files=files)
-        assert response.status_code == 200, f"Request {i+1} failed unexpectedly"
-
-    # The 6th request should be rate-limited
-    response = client.post("/transcribe", files=files)
-    assert response.status_code == 429
-    assert "Rate limit exceeded" in response.json()["detail"]
+    data = response.json()
+    assert "client_ip" in data
+    assert "headers" in data
+    assert isinstance(data["headers"], dict)

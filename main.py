@@ -1,13 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 from faster_whisper import WhisperModel
+from contextlib import asynccontextmanager
 import tempfile
 import os
 import logging
-import redis
 
 # Configure logging to be more informative
 logging.basicConfig(
@@ -25,67 +22,31 @@ def get_client_ip(request: Request) -> str:
     if forwarded_for:
         # Take the first IP in the chain (original client IP)
         client_ip = forwarded_for.split(",")[0].strip()
-        logger.info(f"Rate limiter using X-Forwarded-For IP: {client_ip}")
+        logger.info(f"Using X-Forwarded-For IP: {client_ip}")
         return client_ip
 
     # Check for X-Real-IP header (used by some proxies)
     real_ip = request.headers.get("x-real-ip")
     if real_ip:
-        logger.info(f"Rate limiter using X-Real-IP: {real_ip}")
+        logger.info(f"Using X-Real-IP: {real_ip}")
         return real_ip
 
     # Fall back to direct client IP
     client_ip = request.client.host if request.client else "unknown"
-    logger.info(f"Rate limiter using direct client IP: {client_ip}")
+    logger.info(f"Using direct client IP: {client_ip}")
     return client_ip
 
 
-# Connect to Redis for centralized rate limit storage with better error handling
-redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-logger.info(f"Connecting to Redis at: {redis_url}")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("=== Application Configuration ===")
+    logger.info("Rate limiting: DISABLED")
+    logger.info("=== Application Ready ===")
+    yield
+    # Shutdown (if needed)
 
-try:
-    # Test Redis connection with a timeout
-    redis_client = redis.from_url(redis_url, socket_connect_timeout=5, socket_timeout=5)
-    redis_client.ping()
-    logger.info("Redis connection successful - using Redis for rate limiting")
-    limiter = Limiter(key_func=get_client_ip, storage_uri=redis_url)
-except Exception as e:
-    logger.warning(f"Redis connection failed: {e}. Falling back to in-memory rate limiting.")
-    # Fall back to in-memory storage if Redis is not available
-    limiter = Limiter(key_func=get_client_ip)
-
-app = FastAPI()
-app.state.limiter = limiter
-
-@app.on_event("startup")
-async def startup_event():
-    """Log rate limiter configuration on startup"""
-    logger.info("=== Rate Limiter Configuration ===")
-    logger.info(f"Limiter type: {type(limiter)}")
-    logger.info(f"Redis URL: {redis_url}")
-
-    # Test Redis connection if using Redis storage
-    if redis_url and not redis_url.startswith("memory://"):
-        try:
-            redis_client.ping()
-            logger.info("✅ Redis connection verified - Rate limiting will work across container restarts")
-        except Exception as e:
-            logger.error(f"❌ Redis connection issue: {e}")
-    else:
-        logger.warning("⚠️ Using in-memory storage - Rate limits will reset on container restart")
-
-    logger.info("=== Rate Limiter Ready ===")
-
-# Add a custom rate limit exceeded handler with better logging
-@app.exception_handler(RateLimitExceeded)
-async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    client_ip = get_client_ip(request)
-    logger.warning(f"Rate limit exceeded for IP: {client_ip} - {exc.detail}")
-    return JSONResponse(
-        status_code=429,
-        content={"detail": f"Rate limit exceeded: {exc.detail}"}
-    )
+app = FastAPI(lifespan=lifespan)
 
 logger.info("Loading transcription model...")
 # Load the model once when the application starts
@@ -107,7 +68,6 @@ def health():
     return {"status": "ok"}
 
 @app.post("/transcribe")
-@limiter.limit("5/minute")
 async def transcribe(request: Request, file: UploadFile = File(...)):
     """
     Transcribes an audio file.
@@ -115,11 +75,10 @@ async def transcribe(request: Request, file: UploadFile = File(...)):
     This endpoint accepts an audio file, validates its format and size,
     and uses the Whisper model to generate a transcription.
 
-    Rate limiting: 5 requests per minute per IP address.
     File size limit: 10MB.
 
     Args:
-        request: The incoming request object (used for rate limiting).
+        request: The incoming request object.
         file: The uploaded audio file.
 
     Returns:
@@ -171,14 +130,12 @@ async def transcribe(request: Request, file: UploadFile = File(...)):
             os.remove(tmp_path)
             logger.info(f"Cleaned up temporary file: {tmp_path}")
 
-# Debug endpoint to check rate limiter status
-@app.get("/debug/rate-limit-info")
-async def rate_limit_info(request: Request):
-    """Debug endpoint to check rate limit configuration"""
+# Debug endpoint to check client information
+@app.get("/debug/client-info")
+async def client_info(request: Request):
+    """Debug endpoint to check client information"""
     client_ip = get_client_ip(request)
     return {
         "client_ip": client_ip,
-        "limiter_type": str(type(limiter)),
-        "rate_limit_key": limiter.key_func(request),
         "headers": dict(request.headers)
     }
