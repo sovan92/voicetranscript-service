@@ -6,7 +6,7 @@ It supports multiple audio formats and includes proper error handling, logging, 
 """
 
 from contextlib import asynccontextmanager
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, AsyncGenerator
 import tempfile
 import os
 import logging
@@ -217,7 +217,7 @@ async def transcribe_audio_file(file_path: str, client_ip: str) -> str:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Handle application startup and shutdown with proper error handling."""
     global model
 
@@ -264,7 +264,7 @@ app = FastAPI(
 
 
 @app.exception_handler(ValidationError)
-async def validation_exception_handler(request: Request, exc: ValidationError):
+async def validation_exception_handler(request: Request, exc: ValidationError) -> JSONResponse:
     """Handle validation errors with structured response."""
     client_ip = get_client_ip(request)
     logger.warning(f"Validation error for {client_ip}: {exc.message}")
@@ -281,7 +281,7 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 
 
 @app.exception_handler(TranscriptionError)
-async def transcription_exception_handler(request: Request, exc: TranscriptionError):
+async def transcription_exception_handler(request: Request, exc: TranscriptionError) -> JSONResponse:
     """Handle transcription errors with structured response."""
     client_ip = get_client_ip(request)
     logger.error(f"Transcription error for {client_ip}: {exc.message}")
@@ -368,6 +368,8 @@ async def transcribe_audio(
         validate_audio_file(file, contents)
 
         # Create temporary file
+        if not file.filename:
+            raise ValidationError("No filename provided", "MISSING_FILENAME")
         file_extension = Path(file.filename).suffix.lower()
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp:
             tmp.write(contents)
