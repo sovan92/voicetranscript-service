@@ -3,5 +3,5 @@ services:
     image: ghcr.io/srath5/voicetranscript-service:__TAG__
     ports:
       - "8000:8000"
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers
+    command: uvicorn voicetranscript.main:app --host 0.0.0.0 --port 8000 --proxy-headers
     restart: always
