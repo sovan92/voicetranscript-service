@@ -48,9 +48,9 @@ class TestHealthEndpoint:
 
     def test_health_check_with_model_failure(self):
         """Test health check when model loading fails."""
-        with patch("main.model", None):
-            with patch("main.WhisperModel", return_value=None):
-                from main import app
+        with patch("voicetranscript.main.model", None):
+            with patch("voicetranscript.main.WhisperModel", return_value=None):
+                from voicetranscript.main import app
                 with TestClient(app) as client:
                     response = client.get("/health")
 

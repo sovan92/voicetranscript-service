@@ -16,9 +16,11 @@ import tempfile
 from pathlib import Path
 from typing import Generator, Dict, Any
 
-# Add the project root directory to the Python path
+# Add the project root and src directory to the Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+src_path = os.path.join(project_root, "src")
 sys.path.insert(0, project_root)
+sys.path.insert(0, src_path)
 
 
 @pytest.fixture(scope="session")
@@ -123,9 +125,9 @@ def client(mock_whisper_model: MagicMock) -> Generator[TestClient, None, None]:
         TestClient instance for testing
     """
     # Patch the WhisperModel before importing the app
-    with patch("main.WhisperModel", return_value=mock_whisper_model):
+    with patch("voicetranscript.main.WhisperModel", return_value=mock_whisper_model):
         # Import after patching to ensure the mock is used
-        from main import app
+        from voicetranscript.main import app
 
         with TestClient(app) as test_client:
             yield test_client
@@ -142,8 +144,8 @@ def client_empty_transcription(mock_whisper_model_empty: MagicMock) -> Generator
     Yields:
         TestClient instance for testing empty transcription scenarios
     """
-    with patch("main.WhisperModel", return_value=mock_whisper_model_empty):
-        from main import app
+    with patch("voicetranscript.main.WhisperModel", return_value=mock_whisper_model_empty):
+        from voicetranscript.main import app
 
         with TestClient(app) as test_client:
             yield test_client
@@ -160,8 +162,8 @@ def client_transcription_error(mock_whisper_model_error: MagicMock) -> Generator
     Yields:
         TestClient instance for testing error scenarios
     """
-    with patch("main.WhisperModel", return_value=mock_whisper_model_error):
-        from main import app
+    with patch("voicetranscript.main.WhisperModel", return_value=mock_whisper_model_error):
+        from voicetranscript.main import app
 
         with TestClient(app) as test_client:
             yield test_client

@@ -13,15 +13,54 @@ jobs:
     outputs:
       image-tag: ${{ steps.set-tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run tests
-        run: python -m pytest
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          # Install flake8 if not in requirements
+          pip install flake8
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+      - name: Type check with mypy
+        run: |
+          pip install mypy types-requests
+          mypy src/ --ignore-missing-imports
+
+      - name: Run tests with coverage
+        run: |
+          # Set PYTHONPATH to include src directory
+          export PYTHONPATH="${PYTHONPATH}:${PWD}/src"
+          # Run tests with coverage
+          python -m pytest tests/ -v --cov=src/voicetranscript --cov-report=term-missing --cov-report=xml --cov-fail-under=80
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
       - name: Set image tag
         id: set-tag
@@ -39,6 +78,7 @@ jobs:
             echo "Login failed. Retrying in 15 seconds..."
             sleep 15
           done
+
       - name: Build and Push Docker Image to GHCR
         if: github.ref == 'refs/heads/main' # Only push on main branch
         run: |
@@ -47,37 +87,42 @@ jobs:
           # Docker image tags must be lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
           echo "Building image with tag: $TAG"
-          # Build the image with the specific tag
-          docker build . --tag $IMAGE_ID:$TAG
+          # Build the image using the Dockerfile in the docker/ directory
+          docker build -f docker/Dockerfile . --tag $IMAGE_ID:$TAG
           # Tag the same image as latest
           docker tag $IMAGE_ID:$TAG $IMAGE_ID:latest
           # Push both tags explicitly
           docker push $IMAGE_ID:$TAG
           docker push $IMAGE_ID:latest
+
   deploy:
     needs: build-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - name: Set image and tag in docker-compose
         run: |
           TAG=${{ needs.build-test.outputs.image-tag }}
           OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
           echo "Using tag from build job: $TAG"
-          sed -i "s|ghcr.io/srath5/|ghcr.io/$OWNER/|g" docker-compose.prod.yml
-          sed -i "s/__TAG__/$TAG/g" docker-compose.prod.yml
+          # Update the docker-compose file in the docker/ directory
+          sed -i "s|ghcr.io/srath5/|ghcr.io/$OWNER/|g" docker/docker-compose.prod.yml
+          sed -i "s/__TAG__/$TAG/g" docker/docker-compose.prod.yml
           echo "Updated docker-compose.prod.yml:"
-          cat docker-compose.prod.yml
+          cat docker/docker-compose.prod.yml
+
       - name: Copy docker-compose.prod.yml to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "~/voicetranscript-service" # Assuming the project is in this directory
+          source: "docker/docker-compose.prod.yml"
+          target: "~/voicetranscript-service"
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -88,7 +133,7 @@ jobs:
             cd voicetranscript-service
             echo "=== Deployment Debug Info ==="
             echo "Current docker-compose.prod.yml content:"
-            cat docker-compose.prod.yml
+            cat docker/docker-compose.prod.yml
             echo "=========================="
             
             echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -97,7 +142,7 @@ jobs:
             sudo fuser -k 8000/tcp || true
             
             # Stop and remove any existing containers to free up the port
-            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans
+            sudo docker-compose -f docker/docker-compose.prod.yml down --remove-orphans
             
             # Wait a moment for containers to fully stop
             sleep 5
@@ -107,23 +152,24 @@ jobs:
             
             # Verify the image we're about to pull
             echo "=== About to pull the following images ==="
-            sudo docker-compose -f docker-compose.prod.yml config --services
-            sudo docker-compose -f docker-compose.prod.yml config | grep image:
+            sudo docker-compose -f docker/docker-compose.prod.yml config --services
+            sudo docker-compose -f docker/docker-compose.prod.yml config | grep image:
             echo "=========================================="
             
             # Pull the specific versioned image (not latest)
-            sudo docker-compose -f docker-compose.prod.yml pull app
+            sudo docker-compose -f docker/docker-compose.prod.yml pull app
             
             # Verify the pulled image
             echo "=== Verifying pulled image ==="
             sudo docker images | grep voicetranscript-service
             echo "=============================="
             
-            # Start the services, which will use the specific tagged image
-            sudo docker-compose -f docker-compose.prod.yml up -d
+            # Start the services
+            sudo docker-compose -f docker/docker-compose.prod.yml up -d
             
-            # Final verification
-            echo "=== Final container status ==="
-            sudo docker-compose -f docker-compose.prod.yml ps
-            sudo docker ps | grep voicetranscript-service
-            echo "=============================="
+            # Show running containers
+            sudo docker ps
+            
+            # Show logs for debugging
+            sudo docker-compose -f docker/docker-compose.prod.yml logs --tail=50
+
