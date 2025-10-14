@@ -69,6 +69,8 @@ jobs:
           script: |
             cd voicetranscript-service
             echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Stop and remove any existing containers to free up the port
+            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans
             # Prune old docker images and other resources to free up space
             sudo docker system prune -af
             # Pull the specific versioned image
