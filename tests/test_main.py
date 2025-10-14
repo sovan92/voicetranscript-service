@@ -55,4 +55,4 @@ def test_transcribe_rate_limit(client, mock_model, dummy_wav_bytes):
     # The 6th request should be rate-limited
     response = client.post("/transcribe", files=files)
     assert response.status_code == 429
-    assert "Rate limit exceeded" in response.json()["error"]
+    assert "Rate limit exceeded" in response.json()["detail"]
