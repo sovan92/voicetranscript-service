@@ -114,6 +114,18 @@ jobs:
           echo "Updated docker-compose.prod.yml:"
           cat docker/docker-compose.prod.yml
 
+      - name: Stop existing containers on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            cd ~/voicetranscript-service
+            if [ -f docker/docker-compose.prod.yml ]; then
+              sudo docker-compose -f docker/docker-compose.prod.yml down --remove-orphans
+            fi
+
       - name: Copy docker-compose.prod.yml to EC2
         uses: appleboy/scp-action@master
         with:
@@ -137,15 +149,6 @@ jobs:
             echo "=========================="
             
             echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Forcefully free up port 8000
-            sudo fuser -k 8000/tcp || true
-            
-            # Stop and remove any existing containers to free up the port
-            sudo docker-compose -f docker/docker-compose.prod.yml down --remove-orphans
-            
-            # Wait a moment for containers to fully stop
-            sleep 5
             
             # Prune old docker images and other resources to free up space
             sudo docker system prune -af
@@ -172,4 +175,3 @@ jobs:
             
             # Show logs for debugging
             sudo docker-compose -f docker/docker-compose.prod.yml logs --tail=50
-
