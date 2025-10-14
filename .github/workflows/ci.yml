@@ -69,6 +69,8 @@ jobs:
           script: |
             cd voicetranscript-service
             echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Prune old docker images and other resources to free up space
+            sudo docker system prune -af
             # Pull the specific versioned image
             sudo docker-compose -f docker-compose.prod.yml pull
             # Start the services, which will use the new image
