@@ -34,8 +34,9 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 
 # Copy the application code
-COPY main.py .
+COPY src/ ./src/
 
 # Activate the virtual environment and run the application
 ENV PATH="/opt/venv/bin:$PATH"
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENV PYTHONPATH="/app/src"
+CMD ["uvicorn", "voicetranscript.main:app", "--host", "0.0.0.0", "--port", "8000"]
