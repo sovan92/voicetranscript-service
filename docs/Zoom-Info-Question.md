@@ -1,4 +1,4 @@
-# ZoomInfo SE3 Take-Home: Build and Ship an Open-Source Speech-to-Text Service
+# Build and Ship an Open-Source Speech-to-Text Service
 
 ## Introduction
 
