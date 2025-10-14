@@ -175,3 +175,4 @@ jobs:
             
             # Show logs for debugging
             sudo docker-compose -f docker/docker-compose.prod.yml logs --tail=50
+
