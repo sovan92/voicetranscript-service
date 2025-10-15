@@ -138,3 +138,23 @@ Once running, visit:
 - FLAC
 - WebM
 - MP4
+
+## 🔮 Next Steps
+
+1. **Add JWT OAuth2 Authentication Layer**
+   - Implement secure authentication using JWT tokens with OAuth2 to protect API endpoints and manage user access.
+
+2. **Implement Rate Limiting**
+   - Add rate limiting middleware to prevent abuse and ensure fair usage of the transcription service.
+
+3. **Route Endpoints Through API Gateway**
+   - Set up Amazon API Gateway to handle request routing, throttling, authentication, and monitoring for the transcription service.
+
+4. **Evaluate Better Transcription Models**
+   - Research and benchmark alternative models (e.g., Whisper Large v3, Distil-Whisper, or cloud-based solutions) to improve transcription accuracy and performance.
+
+5. **Migrate to Amazon EKS**
+   - Move from EC2-based deployment to Amazon Elastic Kubernetes Service (EKS) for better scalability, orchestration, and production stability.
+
+6. **Store Images in Amazon ECR**
+   - Transition Docker image storage from GitHub Container Registry (GHCR) to Amazon Elastic Container Registry (ECR) for tighter AWS integration.
