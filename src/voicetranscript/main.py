@@ -360,6 +360,8 @@ async def transcribe_audio(
 
     logger.info(f"[{request_id}] Transcription request from {client_ip}: {file.filename}")
 
+    logger.info("Started transcripton process")
+
     tmp_path: Optional[str] = None
 
     try:
